@@ -5,19 +5,21 @@ export type PistonArgs = {
   fileName?: string;
 };
 
-// Piston-compatible executor. The public emkc.org endpoint went
-// whitelist-only in 2026, so owners should self-host Piston
-// (1 command — see README) and point NEXT_PUBLIC_PISTON_URL at it.
-const EXECUTOR =
-  process.env.NEXT_PUBLIC_PISTON_URL ||
-  "https://emkc.org/api/v2/piston/execute";
+// The public emkc.org endpoint is whitelist-only. Configure a self-hosted
+// or approved executor instead of silently sending requests to a dead default.
+const EXECUTOR = process.env.NEXT_PUBLIC_PISTON_URL?.replace(/\/+$/, "");
 
 type PistonRuntime = { language: string; version: string; aliases?: string[] };
 
 // Pinned versions rot (every Piston release ships new ones), so resolve the
 // newest matching runtime from the executor itself, falling back to pinned.
 function runtimesUrl(): string {
-  const base = EXECUTOR.replace(/\/+$/, "");
+  if (!EXECUTOR) {
+    throw new Error(
+      "Code execution is not configured. Set NEXT_PUBLIC_PISTON_URL to a self-hosted or whitelisted Piston endpoint."
+    );
+  }
+  const base = EXECUTOR;
   if (base.endsWith("/piston/execute")) {
     return base.slice(0, -"/piston/execute".length) + "/piston/runtimes";
   }
@@ -93,6 +95,11 @@ async function resolveRuntime(
 export async function executeCode({ language, version, code, fileName }: PistonArgs): Promise<{ output: string }> {
   if (!code.trim()) throw new Error("Please Enter Some Code");
   if (code.length > 50_000) throw new Error("Code too large (max 50KB)");
+  if (!EXECUTOR) {
+    throw new Error(
+      "Code execution is not configured. Set NEXT_PUBLIC_PISTON_URL to a self-hosted or whitelisted Piston endpoint."
+    );
+  }
 
   const runtime = await resolveRuntime(language, version);
   const body = JSON.stringify({

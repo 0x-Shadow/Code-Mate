@@ -4,6 +4,7 @@ import { create } from "zustand";
 // import { Monaco } from "@monaco-editor/react";
 import type * as monaco from "monaco-editor";
 import { LANGUAGE_CONFIG, THEMES } from "@/app/(root)/_constants";
+import { executeCode } from "@/lib/piston";
 
 const DEFAULT_LANGUAGE = "javascript";
 const DEFAULT_THEME = "vs-dark";
@@ -187,7 +188,6 @@ export const useCodeEditorStore = create<CodeEditorState>((set, get) => {
           set({ isRunning: true, error: null, output: "" });
           try {
             const runtime = config.pistonRuntime;
-            const { executeCode } = await import("@/lib/piston");
             const { output } = await executeCode({ language: runtime.language, version: runtime.version, fileName: runtime.fileName, code });
             set({
               output,

@@ -1,8 +1,8 @@
 "use client";
 import { useCodeEditorStore } from "@/store/useCodeEditorStore";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { defineMonacoThemes, LANGUAGE_CONFIG } from "../_constants";
-import { Editor } from "@monaco-editor/react";
+import { Editor, loader } from "@monaco-editor/react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { RotateCcwIcon, TypeIcon } from "lucide-react";
@@ -11,6 +11,28 @@ import useMounted from "@/hooks/useMounted";
 
 function EditorPanel() {
   const mounted = useMounted();
+  const [monacoReady, setMonacoReady] = useState(false);
+
+  // Self-hosted Monaco: hand the wrapper our bundled instance so it never
+  // touches the public CDN (blocked by CSP and some national firewalls —
+  // the CDN failure surfaced as a cryptic "[object Event]" crash).
+  // Dynamic import keeps it out of SSR (monaco touches window at load).
+  useEffect(() => {
+    let cancelled = false;
+    import("monaco-editor")
+      .then((monacoModule) => {
+        if (cancelled) return;
+        const monaco = monacoModule.default ?? monacoModule;
+        loader.config({ monaco });
+        setMonacoReady(true);
+      })
+      .catch(() => {
+        // Editor stays on skeleton; a retry happens on next mount.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const { language, theme, fontSize, editor, setFontSize, setEditor } =
     useCodeEditorStore();
@@ -122,7 +144,7 @@ function EditorPanel() {
 
         {/* Editor */}
         <div className="relative group rounded-xl overflow-hidden ring-1 ring-white/[0.05]">
-          {mounted ? (
+          {mounted && monacoReady ? (
             <Editor
               height="600px"
               language={LANGUAGE_CONFIG[language].monacoLanguage}

@@ -13,7 +13,7 @@ npm run dev
 
 Open `http://localhost:3000`. No accounts, no database.
 
-## Code execution (1 step, required)
+## Code execution
 
 Code runs on a **Piston** sandbox (isolated server, never in the visitor's
 browser). The public endpoint is whitelist-only, so point the app at your
@@ -29,8 +29,28 @@ then set in `.env.local`:
 NEXT_PUBLIC_PISTON_URL=http://YOUR-SERVER:2000/api/v2/piston/execute
 ```
 
-(Any VPS with Docker works — ~$5/mo. Or apply for the public whitelist at
-https://github.com/engineer-man/piston#public-api and keep the default.)
+(Any VPS with Docker works. The public endpoint is no longer a general
+fallback; the app requires `NEXT_PUBLIC_PISTON_URL`.)
+
+## Deploy to GitHub Pages
+
+Push the repository to GitHub and set **Settings → Pages → Source** to
+**GitHub Actions**. The included workflow deploys the static site on every
+push to `main`.
+
+Add these repository variables under **Settings → Secrets and variables →
+Actions → Variables**:
+
+- `PISTON_URL`: your public HTTPS Piston endpoint.
+- `ADSENSE_CLIENT`: your AdSense publisher ID, such as `ca-pub-XXXX`.
+- Optional: `AD_SLOT_TOP` and `AD_SLOT_BOTTOM`.
+
+Your public URL will be:
+
+`https://YOUR-GITHUB-USERNAME.github.io/YOUR-REPOSITORY-NAME/`
+
+Add that URL to **AdSense → Sites** and wait for approval. The Piston server
+must allow CORS requests from this GitHub Pages URL.
 
 ## Get paid (AdSense)
 
@@ -56,10 +76,4 @@ https://github.com/engineer-man/piston#public-api and keep the default.)
   stored anywhere. Preferences (theme, code drafts) live only in the
   visitor's own `localStorage`.
 
-## Deploy
-
-```bash
-npm run build && npm run start
-```
-
-or push to Vercel. Set `NEXT_PUBLIC_ADSENSE_CLIENT` in the host's env vars.
+See [DEPLOY.md](DEPLOY.md) for the complete GitHub Pages checklist.
