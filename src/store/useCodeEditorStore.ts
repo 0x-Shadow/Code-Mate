@@ -188,7 +188,7 @@ export const useCodeEditorStore = create<CodeEditorState>((set, get) => {
           try {
             const runtime = config.pistonRuntime;
             const { executeCode } = await import("@/lib/piston");
-            const { output } = await executeCode({ language: runtime.language, version: runtime.version, code });
+            const { output } = await executeCode({ language: runtime.language, version: runtime.version, fileName: runtime.fileName, code });
             set({
               output,
               error: null,

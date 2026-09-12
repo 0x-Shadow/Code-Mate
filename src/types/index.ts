@@ -18,6 +18,9 @@ export interface Language {
 export interface LanguageRuntime {
   language: string;
   version: string;
+  // Filename sent to the executor. Matters for languages where the public
+  // class must match the file (Java: Main.java) — harmless elsewhere.
+  fileName: string;
 }
 
 export interface ExecuteCodeResponse {

@@ -1,4 +1,9 @@
-export type PistonArgs = { language: string; version: string; code: string };
+export type PistonArgs = {
+  language: string;
+  version: string;
+  code: string;
+  fileName?: string;
+};
 
 // Piston-compatible executor. The public emkc.org endpoint went
 // whitelist-only in 2026, so owners should self-host Piston
@@ -85,7 +90,7 @@ async function resolveRuntime(
   return { language, version: pinnedVersion };
 }
 
-export async function executeCode({ language, version, code }: PistonArgs): Promise<{ output: string }> {
+export async function executeCode({ language, version, code, fileName }: PistonArgs): Promise<{ output: string }> {
   if (!code.trim()) throw new Error("Please Enter Some Code");
   if (code.length > 50_000) throw new Error("Code too large (max 50KB)");
 
@@ -93,7 +98,8 @@ export async function executeCode({ language, version, code }: PistonArgs): Prom
   const body = JSON.stringify({
     language: runtime.language,
     version: runtime.version,
-    files: [{ content: code }],
+    // A real filename: required by Java (public class ↔ file), ignored elsewhere.
+    files: [{ name: fileName || "main.txt", content: code }],
   });
 
   let data: unknown;
