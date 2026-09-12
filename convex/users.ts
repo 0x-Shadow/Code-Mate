@@ -67,3 +67,20 @@ export const upgradeToPro = mutation({
     return { success: true };
   },
 });
+
+export const upgradeToProByStripe = mutation({
+  args: { email: v.string(), stripeCustomerId: v.string() },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("email"), args.email))
+      .first();
+    if (!user) throw new Error("User not found");
+    await ctx.db.patch(user._id, {
+      isPro: true,
+      proSince: Date.now(),
+      stripeCustomerId: args.stripeCustomerId,
+    });
+    return { success: true };
+  },
+});

@@ -106,4 +106,30 @@ http.route({
   }),
 });
 
+http.route({
+  path: "/stripe-webhook",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const payloadString = await request.text();
+    const signature = request.headers.get("stripe-signature");
+    if (!signature) return new Response("Missing stripe-signature", { status: 400 });
+    try {
+      const result: any = await ctx.runAction(internal.stripe.verifyWebhook, {
+        payload: payloadString,
+        signature,
+      });
+      if (result?.type === "checkout.session.completed" && result.email) {
+        await ctx.runMutation(api.users.upgradeToProByStripe, {
+          email: result.email,
+          stripeCustomerId: result.stripeCustomerId ?? "",
+        });
+      }
+      return new Response("Webhook processed successfully", { status: 200 });
+    } catch (error) {
+      console.log("Stripe webhook error:", error);
+      return new Response("Error processing webhook", { status: 500 });
+    }
+  }),
+});
+
 export default http;
