@@ -2,7 +2,7 @@
 import { useUser } from "@clerk/nextjs";
 import { usePaginatedQuery, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "../../../convex/_generated/api";
 import NavigationHeader from "@/components/NavigationHeader";
 import ProfileHeader from "./_components/ProfileHeader";
@@ -33,11 +33,18 @@ function ProfilePage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"executions" | "starred">("executions");
 
-  const userStats = useQuery(api.codeExecutions.getUserStats, {
-    userId: user?.id ?? "",
-  });
+  // Backend derives identity from auth — no userIds are sent. Queries stay
+  // skipped until sign-in so signed-out visitors never fire authed calls.
+  const ready = isLoaded && !!user;
+  const userStats = useQuery(
+    api.codeExecutions.getUserStats,
+    ready ? {} : "skip"
+  );
 
-  const starredSnippets = useQuery(api.snippets.getStarredSnippets);
+  const starredSnippets = useQuery(
+    api.snippets.getStarredSnippets,
+    ready ? {} : "skip"
+  );
 
   const {
     results: executions,
@@ -46,19 +53,21 @@ function ProfilePage() {
     loadMore,
   } = usePaginatedQuery(
     api.codeExecutions.getUserExecutions,
-    {
-      userId: user?.id ?? "",
-    },
+    ready ? {} : "skip",
     { initialNumItems: 5 }
   );
 
-  const userData = useQuery(api.users.getUser, { userId: user?.id ?? "" });
+  const userData = useQuery(api.users.getUser, ready ? {} : "skip");
 
   const handleLoadMore = () => {
     if (executionStatus === "CanLoadMore") loadMore(5);
   };
 
-  if (!user && isLoaded) return router.push("/");
+  useEffect(() => {
+    if (isLoaded && !user) router.replace("/");
+  }, [isLoaded, user, router]);
+
+  if (!isLoaded || !user) return <ProfileHeaderSkeleton />;
 
   return (
     <div className="min-h-screen bg-[#0a0a0f]">
@@ -68,10 +77,10 @@ function ProfilePage() {
         {/*ProfileHeader */}
 
         {userStats && userData && (
-          <ProfileHeader userStats={userStats} userData={userData} user={user!} />
+          <ProfileHeader userStats={userStats} userData={userData} user={user} />
         )}
 
-        {(userStats === undefined || !isLoaded) && <ProfileHeaderSkeleton />}
+        {(userStats === undefined || userData === undefined) && <ProfileHeaderSkeleton />}
 
         {/*Maincontent */}
         <div
@@ -189,7 +198,7 @@ function ProfilePage() {
                       </h3>
                     </div>
                   ) : (
-                    executions.length === 0 && (
+                    (executions ?? []).length === 0 && (
                       <div className="text-center py-12">
                         <Code className="w-12 h-12 text-gray-600 mx-auto mb-4" />
                         <h3 className="text-lg font-medium text-gray-400 mb-2">

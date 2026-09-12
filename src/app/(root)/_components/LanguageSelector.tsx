@@ -13,7 +13,8 @@ function LanguageSelector({ hasAccess }: { hasAccess: boolean }) {
 
   const { language, setLanguage } = useCodeEditorStore();
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const currentLanguageObj = LANGUAGE_CONFIG[language];
+  // A poisoned localStorage value must never crash the header.
+  const currentLanguageObj = LANGUAGE_CONFIG[language] ?? LANGUAGE_CONFIG.javascript;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -28,7 +29,6 @@ function LanguageSelector({ hasAccess }: { hasAccess: boolean }) {
 
   const handleLanguageSelect = (langId: string) => {
     if (!hasAccess && langId !== "javascript") return;
-    console.log("Selecting language:", langId);
     setLanguage(langId);
     setIsOpen(false);
   };

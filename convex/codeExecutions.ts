@@ -1,32 +1,50 @@
 import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { paginationOptsValidator } from "convex/server";
 
 const FREE_DAILY_RUNS = 30;
 const PRO_DAILY_RUNS = 1000;
+const MAX_OUTPUT_CHARS = 20_000;
+
+// Server-side UTC day key. Never trust the client's dayKey — a client
+// that omits or forges it would bypass quotas entirely.
+function todayKey(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+async function getCaller(ctx: QueryCtx | MutationCtx): Promise<string> {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) throw new ConvexError("Not authenticated");
+  return identity.subject;
+}
+
+async function countToday(
+  ctx: QueryCtx | MutationCtx,
+  userId: string,
+  dayKey: string
+): Promise<number> {
+  const rows = await ctx.db
+    .query("codeExecutions")
+    .withIndex("by_user_and_day", (q) =>
+      q.eq("userId", userId).eq("dayKey", dayKey)
+    )
+    .collect();
+  return rows.length;
+}
 
 export const checkQuota = query({
-  args: { userId: v.string(), dayKey: v.optional(v.string()) },
-  handler: async (ctx, args) => {
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getCaller(ctx);
     const user = await ctx.db
       .query("users")
-      .withIndex("by_user_id")
-      .filter((q) => q.eq(q.field("userId"), args.userId))
+      .withIndex("by_user_id", (q) => q.eq("userId", userId))
       .first();
     const isPro = user?.isPro === true;
     const limit = isPro ? PRO_DAILY_RUNS : FREE_DAILY_RUNS;
-    // Missing dayKey = uncounted legacy: nothing to count against.
-    if (args.dayKey === undefined) {
-      return { used: 0, limit, isPro, remaining: limit };
-    }
-    const used = (
-      await ctx.db
-        .query("codeExecutions")
-        .withIndex("by_user_and_day")
-        .filter((q) => q.eq(q.field("userId"), args.userId))
-        .filter((q) => q.eq(q.field("dayKey"), args.dayKey))
-        .collect()
-    ).length;
+    const dayKey = todayKey();
+    const used = await countToday(ctx, userId, dayKey);
     return { used, limit, isPro, remaining: Math.max(0, limit - used) };
   },
 });
@@ -37,36 +55,26 @@ export const saveExecution = mutation({
         code:v.string(),
         output:v.optional(v.string()),
         error:v.optional(v.string()),
-        dayKey: v.optional(v.string()),
     },
     handler:async(ctx,args)=>{
-        const identity=await ctx.auth.getUserIdentity();
-        if(!identity) throw new ConvexError("Not authenticated");
+        const userId = await getCaller(ctx);
         if (args.code.length > 50_000) throw new ConvexError("Code too large");
+        if ((args.output?.length ?? 0) > MAX_OUTPUT_CHARS)
+          throw new ConvexError("Output too large");
+        if ((args.error?.length ?? 0) > MAX_OUTPUT_CHARS)
+          throw new ConvexError("Error output too large");
 
         const user=await ctx.db
         .query("users")
-        .withIndex("by_user_id")
-        .filter((q)=>q.eq(q.field("userId"),identity.subject))
+        .withIndex("by_user_id", (q) => q.eq("userId", userId))
         .first();
 
         if(!user?.isPro && args.language!=="javascript"){
             throw new ConvexError("Pro Subscription Required");
         }
 
-        // Missing dayKey = uncounted legacy (pre-migration rows and old
-        // clients): only count docs with a matching dayKey.
-        const used =
-          args.dayKey === undefined
-            ? 0
-            : (
-                await ctx.db
-                  .query("codeExecutions")
-                  .withIndex("by_user_and_day")
-                  .filter((q) => q.eq(q.field("userId"), identity.subject))
-                  .filter((q) => q.eq(q.field("dayKey"), args.dayKey))
-                  .collect()
-              ).length;
+        const dayKey = todayKey();
+        const used = await countToday(ctx, userId, dayKey);
         const limit = user?.isPro ? PRO_DAILY_RUNS : FREE_DAILY_RUNS;
         if (used >= limit) throw new ConvexError("Daily limit reached");
 
@@ -75,41 +83,40 @@ export const saveExecution = mutation({
             code: args.code,
             output: args.output,
             error: args.error,
-            dayKey: args.dayKey,
-            userId:identity.subject,
+            dayKey,
+            userId,
         })
     }
 })
 
 export const getUserExecutions = query({
   args: {
-    userId: v.string(),
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
+    const userId = await getCaller(ctx);
     return await ctx.db
       .query("codeExecutions")
-      .withIndex("by_user_id")
-      .filter((q) => q.eq(q.field("userId"), args.userId))
+      .withIndex("by_user_id", (q) => q.eq("userId", userId))
       .order("desc")
       .paginate(args.paginationOpts);
   },
 });
 
 export const getUserStats = query({
-  args: { userId: v.string() },
-  handler: async (ctx, args) => {
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getCaller(ctx);
     const executions = await ctx.db
       .query("codeExecutions")
-      .withIndex("by_user_id")
-      .filter((q) => q.eq(q.field("userId"), args.userId))
-      .collect();
+      .withIndex("by_user_id", (q) => q.eq("userId", userId))
+      .order("desc")
+      .take(500);
 
     // Get starred snippets
     const starredSnippets = await ctx.db
       .query("stars")
-      .withIndex("by_user_id")
-      .filter((q) => q.eq(q.field("userId"), args.userId))
+      .withIndex("by_user_id", (q) => q.eq("userId", userId))
       .collect();
 
     // Get all starred snippet details to analyze languages

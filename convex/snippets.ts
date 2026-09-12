@@ -1,6 +1,17 @@
 import { v } from "convex/values"
 import { mutation, query } from "./_generated/server"
 
+const MAX_TITLE_CHARS = 100;
+const MAX_CODE_CHARS = 50_000;
+const MAX_COMMENT_CHARS = 5_000;
+
+function cleanText(value: string, max: number, field: string): string {
+    const trimmed = value.trim();
+    if (!trimmed) throw new Error(`${field} must not be empty`);
+    if (trimmed.length > max) throw new Error(`${field} too long (max ${max} chars)`);
+    return trimmed;
+}
+
 export const createSnippet = mutation({
     args: {
         title: v.string(),
@@ -14,21 +25,24 @@ export const createSnippet = mutation({
             throw new Error("Not authenticated");
         }
 
+        const title = cleanText(args.title, MAX_TITLE_CHARS, "Title");
+        const code = cleanText(args.code, MAX_CODE_CHARS, "Code");
+        const language = cleanText(args.language, 30, "Language");
+
 
         const user= await ctx.db
         .query("users")
-        .withIndex("by_user_id").
-        filter((q)=>q.eq(q.field("userId"),identity.subject))
-        .first();
+        .withIndex("by_user_id", (q) => q.eq("userId", identity.subject)).
+        first();
 
         if(!user) throw new Error("User not found");
 
         const snippetId =await ctx.db.insert("snippets",{
             userId: identity.subject,
             userName:user.name,
-            title:args.title,
-            language:args.language,
-            code:args.code
+            title,
+            language,
+            code
         })
 
         return snippetId;
@@ -95,6 +109,8 @@ export const starSnippet = mutation({
         if(existing){
             await ctx.db.delete(existing._id);
         }else{
+            const snippet = await ctx.db.get(args.snippetId);
+            if (!snippet) throw new Error("Snippet not found");
             await ctx.db.insert("stars",{
                 userId: identity.subject,
                 snippetId: args.snippetId,
@@ -112,10 +128,14 @@ export const addComment = mutation({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
 
+    const snippet = await ctx.db.get(args.snippetId);
+    if (!snippet) throw new Error("Snippet not found");
+
+    const content = cleanText(args.content, MAX_COMMENT_CHARS, "Comment");
+
     const user = await ctx.db
       .query("users")
-      .withIndex("by_user_id")
-      .filter((q) => q.eq(q.field("userId"), identity.subject))
+      .withIndex("by_user_id", (q) => q.eq("userId", identity.subject))
       .first();
 
     if (!user) throw new Error("User not found");
@@ -124,7 +144,7 @@ export const addComment = mutation({
       snippetId: args.snippetId,
       userId: identity.subject,
       userName: user.name,
-      content: args.content,
+      content,
     });
   },
 });
@@ -149,8 +169,9 @@ export const deleteComment = mutation({
 
 export const getSnippets= query({
     handler:async(ctx)=>{
-        //collecting snippets from db in orders by time
-        const snippets = await ctx.db.query("snippets").order("desc").collect();
+        //collecting snippets from db in orders by time (bounded: full
+        // pagination is a buyer TODO — 200 newest is plenty for a starter).
+        const snippets = await ctx.db.query("snippets").order("desc").take(200);
         return snippets;
     }
 })

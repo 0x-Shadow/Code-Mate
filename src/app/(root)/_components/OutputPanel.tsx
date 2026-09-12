@@ -3,6 +3,7 @@
 import { useCodeEditorStore } from "@/store/useCodeEditorStore";
 import { AlertTriangle, CheckCircle, Clock, Copy, Terminal } from "lucide-react";
 import { useState } from "react";
+import toast from "react-hot-toast";
 import RunningCodeSkeleton from "./RunningCodeSkeleton";
 
 function OutputPanel() {
@@ -13,10 +14,14 @@ function OutputPanel() {
 
   const handleCopy = async () => {
     if (!hasContent) return;
-    await navigator.clipboard.writeText(error || output);
-    setIsCopied(true);
+    try {
+      await navigator.clipboard.writeText(error || output);
+      setIsCopied(true);
 
-    setTimeout(() => setIsCopied(false), 2000);
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch {
+      toast.error("Copy failed — select the text manually");
+    }
   };
 
   return (

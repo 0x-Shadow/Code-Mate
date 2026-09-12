@@ -6,8 +6,8 @@ import { useMutation } from "convex/react";
 import { motion } from "framer-motion";
 import { Loader2, Play } from "lucide-react";
 import { api } from "../../../../convex/_generated/api";
-import { getDayKey } from "@/lib/quotas";
 import { isConvexConfigured } from "@/lib/env";
+import toast from "react-hot-toast";
 
 function RunButtonUI({ onRun }: { onRun: () => Promise<void> }) {
   const { isRunning } = useCodeEditorStore();
@@ -63,13 +63,19 @@ function RunButtonWithSave() {
     const { executionResult, language } = useCodeEditorStore.getState();
 
     if (user && executionResult) {
-      await saveExecution({
-        language,
-        code: executionResult.code,
-        output: executionResult.output || undefined,
-        error: executionResult.error || undefined,
-        dayKey: getDayKey(),
-      });
+      try {
+        // dayKey is computed server-side (UTC) — the client never sends it.
+        await saveExecution({
+          language,
+          code: executionResult.code,
+          output: executionResult.output || undefined,
+          error: executionResult.error || undefined,
+        });
+      } catch (e) {
+        toast.error(
+          e instanceof Error ? e.message : "Could not save execution"
+        );
+      }
     }
   };
 

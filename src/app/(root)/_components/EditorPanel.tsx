@@ -19,6 +19,8 @@ function EditorPanel() {
 
   const { language, theme, fontSize, editor, setFontSize, setEditor } =
     useCodeEditorStore();
+  const languageLogo =
+    LANGUAGE_CONFIG[language]?.logoPath ?? "/javascript.png";
 
   // Validate code for each language
   const isValidCodeForLanguage = (code: string, lang: string): boolean => {
@@ -50,7 +52,8 @@ function EditorPanel() {
   // Restore font size from storage
   useEffect(() => {
     const savedFontSize = localStorage.getItem("editor-font-size");
-    if (savedFontSize) setFontSize(parseInt(savedFontSize));
+    const n = savedFontSize ? parseInt(savedFontSize, 10) : NaN;
+    if (Number.isFinite(n)) setFontSize(n);
   }, [setFontSize]);
 
   const handleRefresh = () => {
@@ -64,6 +67,7 @@ function EditorPanel() {
   };
 
   const handleFontSizeChange = (newSize: number) => {
+    if (!Number.isFinite(newSize)) return;
     const size = Math.min(Math.max(newSize, 12), 24);
     setFontSize(size);
     localStorage.setItem("editor-font-size", size.toString());
@@ -79,7 +83,7 @@ function EditorPanel() {
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#1e1e2e] ring-1 ring-white/5">
               <Image
-                src={`/${language}.png`}
+                src={languageLogo}
                 alt={`${language} logo`}
                 width={24}
                 height={24}
@@ -100,7 +104,7 @@ function EditorPanel() {
                 min="12"
                 max="24"
                 value={fontSize}
-                onChange={(e) => handleFontSizeChange(parseInt(e.target.value))}
+                onChange={(e) => handleFontSizeChange(parseInt(e.target.value, 10))}
                 className="w-20 h-1 bg-gray-600 rounded-lg cursor-pointer"
               />
               <span className="text-sm font-medium text-gray-400 min-w-[2rem] text-center">

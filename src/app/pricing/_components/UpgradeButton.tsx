@@ -2,7 +2,10 @@ import { Zap } from "lucide-react";
 import Link from "next/link";
 
 export default function UpgradeButton() {
+  // Legacy LemonSqueezy checkout. Prefer Stripe (NEXT_PUBLIC_STRIPE_PRO_PRICE_ID).
+  // Kept as env override so buyers point it at their own store without code edits.
   const CHEKOUT_URL =
+    process.env.NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL ||
     "https://codemate.lemonsqueezy.com/buy/0494ee48-9aa5-4761-b7f4-906668d1e75d";
 
   return (

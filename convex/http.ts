@@ -2,7 +2,7 @@ import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { Webhook } from "svix";
 import { WebhookEvent } from "@clerk/nextjs/server";
-import { api, internal } from "./_generated/api";
+import { internal } from "./_generated/api";
 
 const http = httpRouter();
 
@@ -23,23 +23,37 @@ http.route({
         signature,
       });
 
-      if (payload.meta.event_name === "order_created") {
-        const { data } = payload;
-
-        const { success } = await ctx.runMutation(api.users.upgradeToPro, {
-          email: data.attributes.user_email,
-          lemonSqueezyCustomerId: data.attributes.customer_id.toString(),
-          lemonSqueezyOrderId: data.id,
-          amount: data.attributes.total,
+      const eventName = payload.meta?.event_name;
+      if (eventName === "order_created") {
+        const email = payload.data?.attributes?.user_email;
+        const customerId = payload.data?.attributes?.customer_id;
+        const orderId = payload.data?.id;
+        if (!email || customerId === undefined || orderId === undefined) {
+          return new Response("Malformed order payload", { status: 400 });
+        }
+        await ctx.runMutation(internal.users.upgradeToPro, {
+          email,
+          lemonSqueezyCustomerId: String(customerId),
+          lemonSqueezyOrderId: String(orderId),
         });
-
-        if (success) {
-          // optionally do anything here
+      } else if (
+        eventName === "subscription_cancelled" ||
+        eventName === "subscription_payment_refunded"
+      ) {
+        const email = payload.data?.attributes?.user_email;
+        if (email) {
+          await ctx.runMutation(internal.users.downgradeToFree, { email });
         }
       }
 
       return new Response("Webhook processed successfully", { status: 200 });
     } catch (error) {
+      if ((error as Error).message === "Invalid signature") {
+        return new Response("Invalid signature", { status: 401 });
+      }
+      if ((error as Error).message === "Malformed webhook payload") {
+        return new Response("Malformed payload", { status: 400 });
+      }
       console.log("Webhook error:", error);
       return new Response("Error processing webhook", { status: 500 });
     }
@@ -65,8 +79,9 @@ http.route({
       });
     }
 
-    const payload = await request.json();
-    const body = JSON.stringify(payload);
+    // Svix must verify the raw body bytes — parse/stringify round-trips
+    // change whitespace/key order and break the signature.
+    const body = await request.text();
 
     const wh = new Webhook(webhookSecret);
     let evt: WebhookEvent;
@@ -79,7 +94,7 @@ http.route({
       }) as WebhookEvent;
     } catch (err) {
       console.error("Error verifying webhook:", err);
-      return new Response("Error occurred", { status: 400 });
+      return new Response("Invalid signature", { status: 401 });
     }
 
     const eventType = evt.type;
@@ -87,11 +102,14 @@ http.route({
       // save the user to convex db
       const { id, email_addresses, first_name, last_name } = evt.data;
 
-      const email = email_addresses[0].email_address;
+      const email = email_addresses?.[0]?.email_address;
+      if (!email) {
+        return new Response("User has no email", { status: 400 });
+      }
       const name = `${first_name || ""} ${last_name || ""}`.trim();
 
       try {
-        await ctx.runMutation(api.users.syncUser, {
+        await ctx.runMutation(internal.users.syncUser, {
           userId: id,
           email,
           name,
@@ -114,18 +132,30 @@ http.route({
     const signature = request.headers.get("stripe-signature");
     if (!signature) return new Response("Missing stripe-signature", { status: 400 });
     try {
-      const result: any = await ctx.runAction(internal.stripe.verifyWebhook, {
+      const result = await ctx.runAction(internal.stripe.verifyWebhook, {
         payload: payloadString,
         signature,
       });
-      if (result?.type === "checkout.session.completed" && result.email) {
-        await ctx.runMutation(api.users.upgradeToProByStripe, {
+      if (result.type === "checkout.session.completed" && "email" in result && result.email) {
+        await ctx.runMutation(internal.users.upgradeToProByStripe, {
           email: result.email,
-          stripeCustomerId: result.stripeCustomerId ?? "",
+          stripeCustomerId: result.stripeCustomerId,
+        });
+      } else if (
+        (result.type === "customer.subscription.deleted" ||
+          result.type === "charge.refunded") &&
+        "email" in result &&
+        result.email
+      ) {
+        await ctx.runMutation(internal.users.downgradeToFree, {
+          email: result.email,
         });
       }
       return new Response("Webhook processed successfully", { status: 200 });
     } catch (error) {
+      if ((error as Error).message === "Invalid Stripe signature") {
+        return new Response("Invalid signature", { status: 401 });
+      }
       console.log("Stripe webhook error:", error);
       return new Response("Error processing webhook", { status: 500 });
     }

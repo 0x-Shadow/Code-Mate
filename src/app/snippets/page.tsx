@@ -27,10 +27,14 @@ const Snippetspage = () => {
   const languages =[...new Set(snippets.map((s)=>s.language))];
   const popularLanguages= languages.slice(0,5);
   const filteredSnippets= snippets.filter(snippet=>{
+    // A single malformed row must never crash the whole library.
+    const title = snippet.title ?? "";
+    const language = snippet.language ?? "";
+    const userName = snippet.userName ?? "";
     const matchesSearch=
-    snippet.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    snippet.language.toLowerCase().includes(searchQuery.toLowerCase())||
-    snippet.userName.toLowerCase().includes(searchQuery.toLowerCase())
+    title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    language.toLowerCase().includes(searchQuery.toLowerCase())||
+    userName.toLowerCase().includes(searchQuery.toLowerCase())
 
     const matchesLanguage= !selectedLanguage || snippet.language === selectedLanguage;
     return matchesSearch && matchesLanguage;

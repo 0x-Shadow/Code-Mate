@@ -19,12 +19,15 @@ function Comments({ snippetId }: { snippetId: Id<"snippets"> }) {
   const deleteComment = useMutation(api.snippets.deleteComment);
 
   const handleSubmitComment = async (content: string) => {
+    if (!user) {
+      toast.error("Sign in to comment");
+      return;
+    }
     setIsSubmitting(true);
 
     try {
       await addComment({ snippetId, content });
-    } catch (error) {
-      console.log("Error adding comment:", error);
+    } catch {
       toast.error("Something went wrong");
     } finally {
       setIsSubmitting(false);
@@ -36,8 +39,7 @@ function Comments({ snippetId }: { snippetId: Id<"snippets"> }) {
 
     try {
       await deleteComment({ commentId });
-    } catch (error) {
-      console.log("Error deleting comment:", error);
+    } catch {
       toast.error("Something went wrong");
     } finally {
       setDeletingCommentId(null);

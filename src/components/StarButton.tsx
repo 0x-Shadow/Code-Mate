@@ -3,16 +3,28 @@ import { Id } from "../../convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Star } from "lucide-react";
+import toast from "react-hot-toast";
 
 function StarButton({ snippetId }: { snippetId: Id<"snippets"> }) {
   const { isSignedIn } = useAuth();
-  const isStarred = useQuery(api.snippets.isSnippetStarred, { snippetId });
+  // Skip authed queries when signed out — backend returns false/0 anyway,
+  // this just avoids wasted calls and load flicker.
+  const isStarred = useQuery(
+    api.snippets.isSnippetStarred,
+    isSignedIn ? { snippetId } : "skip"
+  );
   const starCount = useQuery(api.snippets.getSnippetStarCount, { snippetId });
   const star = useMutation(api.snippets.starSnippet);
-  // TODO: Implement star functionality
   const handleStar = async () => {
-    if (!isSignedIn) return;
-    await star({ snippetId });
+    if (!isSignedIn) {
+      toast.error("Sign in to star snippets");
+      return;
+    }
+    try {
+      await star({ snippetId });
+    } catch {
+      toast.error("Could not star snippet");
+    }
   };
   return (
     <button
@@ -29,7 +41,7 @@ function StarButton({ snippetId }: { snippetId: Id<"snippets"> }) {
       <span
         className={`text-xs font-medium ${isStarred ? "text-yellow-500" : "text-gray-400"}`}
       >
-        {starCount}
+        {starCount ?? "—"}
       </span>
     </button>
   );

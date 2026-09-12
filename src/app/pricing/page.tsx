@@ -10,15 +10,24 @@ import FeatureCategory from "./_components/FeatureCategory";
 import { SignedIn, SignedOut } from "@clerk/nextjs";
 import UpgradeButton from "./_components/UpgradeButton";
 import LoginButton from "../../components/LoginButton";
+import { CONVEX_URL, isConvexConfigured } from "@/lib/env";
 
 async function PricingPage() {
   const user = await currentUser();
-  const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
-  const convexUser = await convex.query(api.users.getUser, {
-    userId: user?.id || "",
-  });
+  // Fail open in demo mode / backend blips: show the paywall, never 500.
+  // (Server queries carry no auth token; real gating is in Convex mutations.)
+  let isPro = false;
+  if (isConvexConfigured && user) {
+    try {
+      const convex = new ConvexHttpClient(CONVEX_URL);
+      const convexUser = await convex.query(api.users.getUser, {});
+      isPro = convexUser?.isPro === true;
+    } catch {
+      isPro = false;
+    }
+  }
 
-  if (convexUser?.isPro) return <ProPlanView />;
+  if (isPro) return <ProPlanView />;
 
   return (
     <div

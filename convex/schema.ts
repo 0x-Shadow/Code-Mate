@@ -11,7 +11,7 @@ export default defineSchema({
         lemonSqueezyCustomerId: v.optional(v.string()),
         lemonSqueezyOrderId: v.optional(v.string()),
         stripeCustomerId: v.optional(v.string()),
-    }).index("by_user_id",["userId"]),//by userid means we can fetch the code anywhere from this name and userid means it refreing to
+    }).index("by_user_id",["userId"]).index("by_email", ["email"]),//by userid means we can fetch the code anywhere from this name and userid means it refreing to
 
     codeExecutions: defineTable({
     userId: v.string(),

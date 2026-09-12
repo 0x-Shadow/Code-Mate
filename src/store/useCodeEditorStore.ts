@@ -3,27 +3,44 @@ import { CodeEditorState } from "./../types/index";
 import { create } from "zustand";
 // import { Monaco } from "@monaco-editor/react";
 import * as monaco from "monaco-editor";
-import { LANGUAGE_CONFIG } from "@/app/(root)/_constants";
+import { LANGUAGE_CONFIG, THEMES } from "@/app/(root)/_constants";
+
+const DEFAULT_LANGUAGE = "javascript";
+const DEFAULT_THEME = "vs-dark";
+const DEFAULT_FONT_SIZE = 16;
+const MIN_FONT_SIZE = 12;
+const MAX_FONT_SIZE = 24;
+
+function sanitizeLanguage(value: string | null): string {
+    return value && value in LANGUAGE_CONFIG ? value : DEFAULT_LANGUAGE;
+}
+
+function sanitizeTheme(value: string | null): string {
+    return value && THEMES.some((t) => t.id === value) ? value : DEFAULT_THEME;
+}
+
+function sanitizeFontSize(value: string | null): number {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return DEFAULT_FONT_SIZE;
+    return Math.min(MAX_FONT_SIZE, Math.max(MIN_FONT_SIZE, Math.round(n)));
+}
 
 const getInitialState = () => {
     //if we are on server side return default values 
     if (typeof window === "undefined") {
         return {
-            language: "javascript",
-            fontSize: 16,
-            theme: "vs-dark",
+            language: DEFAULT_LANGUAGE,
+            fontSize: DEFAULT_FONT_SIZE,
+            theme: DEFAULT_THEME,
         }
     }
 
     //but if we r on client side then we take data from local storage ad it is a browser api
-    const savedLanguage = localStorage.getItem("editor-language") || "javascript";
-    const savedTheme = localStorage.getItem("editor-theme") || "vs-dark";
-    const savedFontSize = localStorage.getItem("editor-font-size") || 16;
-
+    //Stored values are validated — a poisoned/migrated key must never crash the app.
     return {
-        language: savedLanguage,
-        theme: savedTheme,
-        fontSize: Number(savedFontSize),
+        language: sanitizeLanguage(localStorage.getItem("editor-language")),
+        theme: sanitizeTheme(localStorage.getItem("editor-theme")),
+        fontSize: sanitizeFontSize(localStorage.getItem("editor-font-size")),
     }
 }
 
@@ -55,14 +72,10 @@ export const useCodeEditorStore = create<CodeEditorState>((set, get) => {
 
         hydrate: () => {
             if (typeof window !== "undefined") {
-                const savedLanguage = localStorage.getItem("editor-language") || "javascript";
-                const savedTheme = localStorage.getItem("editor-theme") || "vs-dark";
-                const savedFontSize = localStorage.getItem("editor-font-size") || 16;
-
                 set({
-                    language: savedLanguage,
-                    theme: savedTheme,
-                    fontSize: Number(savedFontSize),
+                    language: sanitizeLanguage(localStorage.getItem("editor-language")),
+                    theme: sanitizeTheme(localStorage.getItem("editor-theme")),
+                    fontSize: sanitizeFontSize(localStorage.getItem("editor-font-size")),
                     isHydrated: true,
                 });
             }
@@ -85,13 +98,15 @@ export const useCodeEditorStore = create<CodeEditorState>((set, get) => {
         },
 
         setTheme: (theme: string) => {
-            localStorage.setItem("editor-theme", theme);
-            set({ theme });
+            const safe = sanitizeTheme(theme);
+            localStorage.setItem("editor-theme", safe);
+            set({ theme: safe });
         },
 
         setFontSize: (fontSize: number) => {
-            localStorage.setItem("editor-font-size", fontSize.toString());
-            set({ fontSize });
+            const safe = sanitizeFontSize(String(fontSize));
+            localStorage.setItem("editor-font-size", safe.toString());
+            set({ fontSize: safe });
         },
 
         setLanguage: (language: string) => {
@@ -110,15 +125,26 @@ export const useCodeEditorStore = create<CodeEditorState>((set, get) => {
             });
         },
         runCode: async () => {
+          // Single flight — a second click while running is ignored instead
+          // of racing and overwriting the first result.
+          if (get().isRunning) return;
           const { language, getCode } = get();
           const code = getCode();
           if (!code) {
             set({ error: "Please Enter Some Code" });
             return;
           }
+          const config = LANGUAGE_CONFIG[language];
+          if (!config) {
+            set({
+              error: `Unknown language "${language}". Pick one from the language menu.`,
+              executionResult: { code, output: "", error: "Unknown language" },
+            });
+            return;
+          }
           set({ isRunning: true, error: null, output: "" });
           try {
-            const runtime = LANGUAGE_CONFIG[language].pistonRuntime;
+            const runtime = config.pistonRuntime;
             const { executeCode } = await import("@/lib/piston");
             const { output } = await executeCode({ language: runtime.language, version: runtime.version, code });
             set({

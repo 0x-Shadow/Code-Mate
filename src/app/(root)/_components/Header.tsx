@@ -4,7 +4,6 @@ import React from "react";
 import { api } from "../../../../convex/_generated/api";
 import Link from "next/link";
 import { Blocks, Code2, Sparkles } from "lucide-react";
-import { SignedIn } from "@clerk/nextjs";
 import ThemeSelector from "./ThemeSelector";
 import LanguageSelector from "./LanguageSelector";
 import RunButton from "./RunButton";
@@ -13,14 +12,19 @@ import HeaderProfileBtn from "./HeaderProfileBtn";
 import { isConvexConfigured, CONVEX_URL } from "@/lib/env";
 
 async function Header() {
-  const convex = isConvexConfigured ? new ConvexHttpClient(CONVEX_URL) : null;
   const user = await currentUser();
-
-  const convexUser = convex
-    ? await convex.query(api.users.getUser, {
-        userId: user?.id || "",
-      })
-    : null;
+  // Fail open: a signed-out visitor or a backend blip must never kill the
+  // editor. Authenticated server queries carry no token here, so treat the
+  // result as a hint (free tier) — real gating happens in Convex mutations.
+  let convexUser: { isPro?: boolean } | null = null;
+  if (isConvexConfigured && user) {
+    try {
+      const convex = new ConvexHttpClient(CONVEX_URL);
+      convexUser = await convex.query(api.users.getUser, {});
+    } catch {
+      convexUser = null;
+    }
+  }
   return (
     <div className="relative z-10">
       <div className="flex items-center lg:justify-between justify-center bg-[#0a0a0f]/80 backdrop-blur-xl p-6 mb-4 rounded-lg">
@@ -53,7 +57,7 @@ async function Header() {
               href="/snippets"
               className="relative group flex items-center gap-2 px-4 py-1.5 rounded-lg text-gray-300 bg-gray-800/50 hover:bg-blue-500/10 border border-gray-800 hover:border-blue-500/50 transition-all duration-300 shadow-lg overflow-hidden"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/1- to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
               <Code2 className="w-4 h-4 relative z-10 group-hover:rotate-3 transition-transform" />
               <span className="text-sm font-medium relative z-10 group-hover:text-white transition-colors">
                 Snippets
@@ -78,9 +82,9 @@ async function Header() {
             </span>
           </Link>
         )}
-        <SignedIn>
-          <RunButton/>
-        </SignedIn>
+        {/* Run is available to everyone (demo included) — saving history
+            requires sign-in and is handled inside RunButton. */}
+        <RunButton />
         <div className="pl-3 border-l border-gray-800">
           <HeaderProfileBtn/>
         </div>

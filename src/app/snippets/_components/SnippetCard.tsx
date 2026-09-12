@@ -16,14 +16,15 @@ const SnippetCard = ({ snippet }: { snippet: Snippet }) => {
   const deleteSnippet = useMutation(api.snippets.deleteSnippet);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleDelete = async () => {
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!window.confirm(`Delete "${snippet.title}"? This cannot be undone.`)) return;
     setIsDeleting(true);
 
     try {
       await deleteSnippet({snippetId: snippet._id});
       toast.success("Succefully Deleted Snippet");
-    } catch (error) {
-      console.log("Error deleting snippet: ",error);
+    } catch {
       toast.error("Error deleting snippet");
     }finally{
       setIsDeleting(false);

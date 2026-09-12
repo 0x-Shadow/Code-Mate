@@ -9,13 +9,14 @@ export function EditorPanelSkeleton() {
         <div className="relative rounded-xl overflow-hidden ring-1 ring-white/[0.05]">
           <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5" />
           <div className="h-[600px] bg-[#1e1e2e]/50 backdrop-blur-sm p-4">
-            {/* Code line skeletons */}
+            {/* Code line skeletons (deterministic widths — no Math.random in
+                render, which would hydrate-mismatch) */}
             {[...Array(15)].map((_, i) => (
               <div key={i} className="flex items-center gap-4 mb-3">
                 <div className={`w-12 h-4 bg-white/5 rounded`} />
                 <div
                   className={`h-4 bg-white/5 rounded`}
-                  style={{ width: `${Math.random() * 60 + 20}%` }}
+                  style={{ width: `${20 + ((i * 37) % 60)}%` }}
                 />
               </div>
             ))}

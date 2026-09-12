@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "convex/react";
-import { useParams } from "next/navigation";
+import { notFound, useParams } from "next/navigation";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
 import SnippetLoadingSkeleton from "./_components/SnippetLoadingSkeleton";
@@ -13,18 +13,27 @@ import CopyButton from "./_components/CopyButton";
 import Comments from "./_components/Comments";
 
 const Page = () => {
-  const snippetId = useParams().id;
+  const rawId = useParams().id;
+  const snippetId =
+    typeof rawId === "string" && rawId.length > 0
+      ? (rawId as Id<"snippets">)
+      : null;
 
-  const snippet = useQuery(api.snippets.getSnippetById, {
-    snippetId: snippetId as Id<"snippets">,
-  });
-  const comments = useQuery(api.snippets.getcomments, {
-    snippetId: snippetId as Id<"snippets">,
-  });
+  const snippet = useQuery(
+    api.snippets.getSnippetById,
+    snippetId ? { snippetId } : "skip"
+  );
+  const comments = useQuery(
+    api.snippets.getcomments,
+    snippetId ? { snippetId } : "skip"
+  );
 
-  // const comments=
-
+  if (snippetId === null) notFound();
   if (snippet === undefined) return <SnippetLoadingSkeleton />;
+  if (snippet === null) notFound();
+  const monacoLanguage =
+    LANGUAGE_CONFIG[snippet.language]?.monacoLanguage ?? "plaintext";
+  const languageIcon = `/${snippet.language}.png`;
   return (
     <div className="min-h-screen bg-[#0a0a0f]">
       <NavigationHeader />
@@ -36,9 +45,12 @@ const Page = () => {
               <div className="flex items-center gap-4">
                 <div className="flex items-center justify-center size-12 rounded-xl bg-[#ffffff08] p-2.5">
                   <img
-                    src={`/${snippet.language}.png`}
+                    src={languageIcon}
                     alt={`${snippet.language} logo`}
                     className="w-full h-full object-contain"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = "none";
+                    }}
                   />
                 </div>
                 <div>
@@ -58,7 +70,7 @@ const Page = () => {
                     </div>
                     <div className="flex items-center gap-2 text-[#8b8b8d]">
                       <MessageSquare className="w-4 h-4" />
-                      <span>{comments?.length} comments</span>
+                      <span>{comments?.length ?? 0} comments</span>
                     </div>
                   </div>
                 </div>
@@ -79,7 +91,7 @@ const Page = () => {
             </div>
             <Editor
               height="600px"
-              language={LANGUAGE_CONFIG[snippet.language].monacoLanguage}
+              language={monacoLanguage}
               value={snippet.code}
               theme="vs-dark"
               beforeMount={defineMonacoThemes}
