@@ -7,39 +7,13 @@ import { motion } from "framer-motion";
 import { Loader2, Play } from "lucide-react";
 import { api } from "../../../../convex/_generated/api";
 import { getDayKey } from "@/lib/quotas";
+import { isConvexConfigured } from "@/lib/env";
 
-function RunButton() {
-  const { user } = useUser();
-  const { runCode, isRunning } = useCodeEditorStore();
-  const saveExecution = useMutation(api.codeExecutions.saveExecution);
-
-  const handleRun = async () => {
-    await runCode();
-    // Read fresh state AFTER runCode resolves — the destructured value
-    // above would be a stale closure (first run saves nothing, later runs
-    // save the previous run's result).
-    const { executionResult, language } = useCodeEditorStore.getState();
-
-    if (user && executionResult) {
-      console.log("Saving execution with data:", {
-      language,
-      code: executionResult.code,
-      output: executionResult.output || undefined,
-      error: executionResult.error || undefined,
-    });
-      await saveExecution({
-        language,
-        code: executionResult.code,
-        output: executionResult.output || undefined,
-        error: executionResult.error || undefined,
-        dayKey: getDayKey(),
-      });
-    }
-  };
-
+function RunButtonUI({ onRun }: { onRun: () => Promise<void> }) {
+  const { isRunning } = useCodeEditorStore();
   return (
     <motion.button
-      onClick={handleRun}
+      onClick={onRun}
       disabled={isRunning}
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
@@ -74,5 +48,39 @@ function RunButton() {
       </div>
     </motion.button>
   );
+}
+
+function RunButtonWithSave() {
+  const { user } = useUser();
+  const { runCode } = useCodeEditorStore();
+  const saveExecution = useMutation(api.codeExecutions.saveExecution);
+
+  const handleRun = async () => {
+    await runCode();
+    // Read fresh state AFTER runCode resolves — the destructured value
+    // above would be a stale closure (first run saves nothing, later runs
+    // save the previous run's result).
+    const { executionResult, language } = useCodeEditorStore.getState();
+
+    if (user && executionResult) {
+      await saveExecution({
+        language,
+        code: executionResult.code,
+        output: executionResult.output || undefined,
+        error: executionResult.error || undefined,
+        dayKey: getDayKey(),
+      });
+    }
+  };
+
+  return <RunButtonUI onRun={handleRun} />;
+}
+
+function RunButton() {
+  const { runCode } = useCodeEditorStore();
+  // Demo mode (no Convex URL): run code without saving history.
+  // useMutation needs a Convex provider, so it lives in RunButtonWithSave only.
+  if (!isConvexConfigured) return <RunButtonUI onRun={runCode} />;
+  return <RunButtonWithSave />;
 }
 export default RunButton;

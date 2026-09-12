@@ -10,15 +10,17 @@ import LanguageSelector from "./LanguageSelector";
 import RunButton from "./RunButton";
 import HeaderProfileBtn from "./HeaderProfileBtn";
 
+import { isConvexConfigured, CONVEX_URL } from "@/lib/env";
+
 async function Header() {
-  const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+  const convex = isConvexConfigured ? new ConvexHttpClient(CONVEX_URL) : null;
   const user = await currentUser();
 
-  const convexUser = await convex.query(api.users.getUser, {
-    userId: user?.id || "",
-  });
-
-  console.log({ convexUser });
+  const convexUser = convex
+    ? await convex.query(api.users.getUser, {
+        userId: user?.id || "",
+      })
+    : null;
   return (
     <div className="relative z-10">
       <div className="flex items-center lg:justify-between justify-center bg-[#0a0a0f]/80 backdrop-blur-xl p-6 mb-4 rounded-lg">
