@@ -1,21 +1,16 @@
 "use client";
 import { useCodeEditorStore } from "@/store/useCodeEditorStore";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { defineMonacoThemes, LANGUAGE_CONFIG } from "../_constants";
 import { Editor } from "@monaco-editor/react";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { RotateCcwIcon, ShareIcon, TypeIcon } from "lucide-react";
-import { useClerk } from "@clerk/nextjs";
+import { RotateCcwIcon, TypeIcon } from "lucide-react";
 import { EditorPanelSkeleton } from "./EditorPanelSkeleton";
 import useMounted from "@/hooks/useMounted";
-import ShareSnippetDialog from "./ShareSnippetDialog";
-import { isConvexConfigured } from "@/lib/env";
 
 function EditorPanel() {
-  const { loaded } = useClerk();
   const mounted = useMounted();
-  const [isShareDialogOpen,setIsShareDialogOpen]= useState(false);
 
   const { language, theme, fontSize, editor, setFontSize, setEditor } =
     useCodeEditorStore();
@@ -122,25 +117,12 @@ function EditorPanel() {
             >
               <RotateCcwIcon className="size-4 text-gray-400" />
             </motion.button>
-
-            {/* Share Button (needs Convex — disabled in demo mode) */}
-            <motion.button
-              whileHover={isConvexConfigured ? { scale: 1.02 } : undefined}
-              whileTap={isConvexConfigured ? { scale: 0.98 } : undefined}
-              onClick={() => setIsShareDialogOpen(true)}
-              disabled={!isConvexConfigured}
-              title={isConvexConfigured ? "Share snippet" : "Add Convex keys to .env.local to enable sharing"}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg overflow-hidden bg-gradient-to-r from-blue-500 to-blue-600 transition-opacity ${isConvexConfigured ? "opacity-90 hover:opacity-100" : "opacity-50 cursor-not-allowed"}`}
-            >
-              <ShareIcon className="size-4 text-white" />
-              <span className="text-sm font-medium text-white">Share</span>
-            </motion.button>
           </div>
         </div>
 
         {/* Editor */}
         <div className="relative group rounded-xl overflow-hidden ring-1 ring-white/[0.05]">
-          {loaded ? (
+          {mounted ? (
             <Editor
               height="600px"
               language={LANGUAGE_CONFIG[language].monacoLanguage}
@@ -177,7 +159,6 @@ function EditorPanel() {
           )}
         </div>
       </div>
-      {isShareDialogOpen && <ShareSnippetDialog onClose={()=>setIsShareDialogOpen(false)}/>}
     </div>
   );
 }

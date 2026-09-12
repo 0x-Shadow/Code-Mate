@@ -25,6 +25,40 @@ function sanitizeFontSize(value: string | null): number {
     return Math.min(MAX_FONT_SIZE, Math.max(MIN_FONT_SIZE, Math.round(n)));
 }
 
+// Abuse guard: the playground is anonymous, so each browser self-limits.
+// (Piston also rate-limits server-side; this stops casual hammering and
+// crypto-miner-style loops from one tab.)
+const MIN_RUN_INTERVAL_MS = 2000;
+const MAX_RUNS_PER_HOUR = 60;
+const RUN_STAMPS_KEY = "codemate-run-stamps";
+
+function checkRateLimit(): string | null {
+    if (typeof window === "undefined") return null;
+    const now = Date.now();
+    let stamps: number[] = [];
+    try {
+        stamps = JSON.parse(localStorage.getItem(RUN_STAMPS_KEY) || "[]");
+        if (!Array.isArray(stamps)) stamps = [];
+    } catch {
+        stamps = [];
+    }
+    stamps = stamps.filter((t) => typeof t === "number" && now - t < 3_600_000);
+    const last = stamps[stamps.length - 1];
+    if (last !== undefined && now - last < MIN_RUN_INTERVAL_MS) {
+        return "Wait a moment before running again";
+    }
+    if (stamps.length >= MAX_RUNS_PER_HOUR) {
+        return "Hourly run limit reached — try again later";
+    }
+    stamps.push(now);
+    try {
+        localStorage.setItem(RUN_STAMPS_KEY, JSON.stringify(stamps));
+    } catch {
+        // Storage full/blocked — still allow the run.
+    }
+    return null;
+}
+
 const getInitialState = () => {
     //if we are on server side return default values 
     if (typeof window === "undefined") {
@@ -139,6 +173,14 @@ export const useCodeEditorStore = create<CodeEditorState>((set, get) => {
             set({
               error: `Unknown language "${language}". Pick one from the language menu.`,
               executionResult: { code, output: "", error: "Unknown language" },
+            });
+            return;
+          }
+          const limited = checkRateLimit();
+          if (limited) {
+            set({
+              error: limited,
+              executionResult: { code, output: "", error: limited },
             });
             return;
           }

@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import Script from "next/script";
 import "./globals.css";
-import { ClerkProvider } from "@clerk/nextjs";
-import ConvexClientProvider from "@/components/providers/ConvexClientProvider";
 import Footer from "@/components/Footer";
 import { Toaster } from "react-hot-toast";
 
@@ -18,9 +17,14 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Code-Mate — Browser IDE + Snippet Library (Next.js + Convex SaaS Starter)",
-  description: "Run 10+ languages in the browser, save snippets, gate Pro with Stripe. Clerk auth, Convex DB, Monaco editor. Deploy in 10 minutes.",
+  title: "Code-Mate — Free Online Code Playground (10+ Languages)",
+  description:
+    "Write and run JavaScript, Python, Java, Go, Rust, C++, C#, Ruby and Swift right in your browser. Free, no sign-up.",
 };
+
+// Google AdSense publisher ID. Set NEXT_PUBLIC_ADSENSE_CLIENT=ca-pub-XXXX
+// in .env.local once AdSense approves your domain. Empty = no ad scripts.
+const ADSENSE_CLIENT = process.env.NEXT_PUBLIC_ADSENSE_CLIENT || "";
 
 export default function RootLayout({
   children,
@@ -28,18 +32,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
-      <html lang="en">
-        <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-gradient-to-b from-gray-900 to-gray-950 text-gray-100 flex flex-col`}
-        >
-          <ConvexClientProvider>
-              {children}
-          </ConvexClientProvider>
-          <Footer/>
-          <Toaster/>
-        </body>
-      </html>
-    </ClerkProvider>
+    <html lang="en">
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-gradient-to-b from-gray-900 to-gray-950 text-gray-100 flex flex-col`}
+      >
+        {ADSENSE_CLIENT && (
+          <Script
+            id="adsense-loader"
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
+            strategy="afterInteractive"
+            crossOrigin="anonymous"
+          />
+        )}
+        {children}
+        <Footer />
+        <Toaster />
+      </body>
+    </html>
   );
 }

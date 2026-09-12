@@ -1,107 +1,65 @@
-# Code-Mate — Browser IDE SaaS Starter (Next.js + Clerk + Convex + Stripe)
+# Code-Mate — Free Online Code Playground (ad-supported)
 
-Run JavaScript, Python, Java, Go, Rust, C++, C#, Ruby, Swift, TypeScript in the browser (Piston), save/share snippets, gate Pro runs with Stripe + Convex quotas.
+Write and run JavaScript, Python, Java, Go, Rust, C++, C#, Ruby and Swift
+right in the browser. **Free, no sign-up, no database.** You earn via
+Google AdSense slots above and below the editor.
 
-- Live demo: _(paste your Vercel URL here)_
-- Stack: Next.js 15, Clerk, Convex, Monaco, Zustand, Tailwind
-- Payments: Stripe (primary) + LemonSqueezy (legacy)
-- Limits: 30 runs/day Free, 1000/day Pro (see `convex/codeExecutions.ts`)
-- Supports **10+ programming languages**
-- Real-time code execution and output visualization
-- Built-in handling for **Success** and **Error** states
-- Clean, distraction-free editor interface
-
-### 🎨 **Customizable Experience**
-- Choose from **5 VSCode-inspired themes**
-- Adjustable **font size controls**
-- Persistent settings for consistent user experience
-
-### 🤝 **Community-Driven Platform**
-- Share, explore, and collaborate through a **Code Snippet Library**
-- Advanced search and filtering options
-- Engage with other developers’ snippets and profiles
-
-### 👤 **User Dashboard**
-- Manage your personal profile
-- Track **execution history**
-- View statistics and coding insights
-
-### 💎 **Flexible Pricing**
-- Free plan for learners and hobbyists  
-- Pro plan for professionals with extended capabilities
-
-### ⚙️ **Advanced Capabilities**
-- **Webhook integration** for real-world workflows
-- **Comprehensive analytics dashboard**
-- Step-by-step **deployment walkthrough** for self-hosting
-
----
-
-## 🧩 Tech Stack
-
-| Category | Technologies Used |
-|-----------|-------------------|
-| Frontend | **Next.js 15**, **TypeScript**, **Tailwind CSS** |
-| Backend | **Convex** |
-| Authentication | **Clerk** |
-| Database | **Convex Database** |
-| Hosting | **Vercel / Convex Cloud** |
-| Language Support | 10+ languages including JavaScript, Python, C++, Java, Go, Rust, PHP, and more |
-
----
-
-
----
-
-## 🧠 How It Works
-
-1. **Sign in** securely using Clerk authentication  
-2. **Select a language** and start coding instantly in the browser  
-3. **Run code** with instant output feedback  
-4. **Save snippets** or share them with the developer community  
-5. **Explore and collaborate** using the community library  
-
----
-
-## 🌟 Vision
-
-Code-Mate aims to make coding more **collaborative, accessible, and inspiring**.  
-Whether you're a beginner writing your first “Hello World” or a professional testing snippets, Code-Mate is built to **empower every coder** with a smarter, more connected environment.
-
----
-
-## 🧑‍💻 Developer
-
-**👤 [Your Name]**  
-📧 [Your Email](mailto:you@example.com)  
-🌐 [Portfolio](#) | 💼 [LinkedIn](#) | 🐙 [GitHub](#)
-
----
-
-## 🪄 Future Enhancements
-
-- Real-time collaborative coding (pair programming)
-- AI-powered code suggestions & explanations
-- Integration with GitHub for snippet sync
-- Mobile-friendly editor view
-- Snippet version control
-
----
-
-## 🏁 Getting Started
+## Run it
 
 ```bash
-# Clone the repository
-git clone https://github.com/<your-username>/code-mate.git
-
-# Navigate to the project directory
-cd code-mate
-
-# Install dependencies
 npm install
-
-# Set up environment variables
-# (Refer to .env.example for configuration details)
-
-# Run the development server
 npm run dev
+```
+
+Open `http://localhost:3000`. No accounts, no database.
+
+## Code execution (1 step, required)
+
+Code runs on a **Piston** sandbox (isolated server, never in the visitor's
+browser). The public endpoint is whitelist-only, so point the app at your
+own instance:
+
+```bash
+docker run -d -p 2000:2000 ghcr.io/engineer-man/piston
+```
+
+then set in `.env.local`:
+
+```
+NEXT_PUBLIC_PISTON_URL=http://YOUR-SERVER:2000/api/v2/piston/execute
+```
+
+(Any VPS with Docker works — ~$5/mo. Or apply for the public whitelist at
+https://github.com/engineer-man/piston#public-api and keep the default.)
+
+## Get paid (AdSense)
+
+1. Apply at https://www.google.com/adsense with your deployed domain
+   (AdSense does not serve `localhost` — slots show placeholders locally).
+2. Copy `.env.example` to `.env.local`, set `NEXT_PUBLIC_ADSENSE_CLIENT=ca-pub-XXXX`.
+3. (Optional) Create ad units and set `NEXT_PUBLIC_AD_SLOT_TOP` / `NEXT_PUBLIC_AD_SLOT_BOTTOM`.
+4. Redeploy. Revenue lands in your AdSense account.
+
+## How it stays safe (no accounts to abuse)
+
+- **User code never runs in the visitor's browser.** It is sent as plain
+  text over HTTPS to your Piston sandbox, which executes it isolated and
+  returns stdout. There is no `eval`, no `innerHTML`, no
+  `dangerouslySetInnerHTML` anywhere — output renders as React-escaped
+  text inside `<pre>`. Even malicious JavaScript (infinite loops, miners,
+  fetch spam) can only burn executor CPU until the 10s timeout — it can
+  never touch your page, your visitors' data, or your server.
+- **Runaway code is capped:** 10s executor timeout, 50KB code limit,
+  20KB output cap, 2s between runs, 60 runs/hour per browser.
+- **Strict CSP** in `next.config.ts` (scripts, frames, connect allowlists).
+- **Nothing to steal:** no logins, no cookies, no database, no user data
+  stored anywhere. Preferences (theme, code drafts) live only in the
+  visitor's own `localStorage`.
+
+## Deploy
+
+```bash
+npm run build && npm run start
+```
+
+or push to Vercel. Set `NEXT_PUBLIC_ADSENSE_CLIENT` in the host's env vars.

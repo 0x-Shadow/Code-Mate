@@ -1,19 +1,24 @@
 "use client";
 
-import {  useCodeEditorStore } from "@/store/useCodeEditorStore";
-import { useUser } from "@clerk/nextjs";
-import { useMutation } from "convex/react";
+import { useCodeEditorStore } from "@/store/useCodeEditorStore";
 import { motion } from "framer-motion";
 import { Loader2, Play } from "lucide-react";
-import { api } from "../../../../convex/_generated/api";
-import { isConvexConfigured } from "@/lib/env";
 import toast from "react-hot-toast";
 
-function RunButtonUI({ onRun }: { onRun: () => Promise<void> }) {
-  const { isRunning } = useCodeEditorStore();
+function RunButton() {
+  const { runCode, isRunning } = useCodeEditorStore();
+
+  const handleRun = async () => {
+    try {
+      await runCode();
+    } catch {
+      toast.error("Could not run code — try again");
+    }
+  };
+
   return (
     <motion.button
-      onClick={onRun}
+      onClick={handleRun}
       disabled={isRunning}
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
@@ -23,7 +28,7 @@ function RunButtonUI({ onRun }: { onRun: () => Promise<void> }) {
         focus:outline-none
       `}
     >
-      {/* bg wit gradient */}
+      {/* bg with gradient */}
       <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-blue-500 rounded-xl opacity-100 transition-opacity group-hover:opacity-90" />
 
       <div className="relative flex items-center gap-2.5">
@@ -48,45 +53,5 @@ function RunButtonUI({ onRun }: { onRun: () => Promise<void> }) {
       </div>
     </motion.button>
   );
-}
-
-function RunButtonWithSave() {
-  const { user } = useUser();
-  const { runCode } = useCodeEditorStore();
-  const saveExecution = useMutation(api.codeExecutions.saveExecution);
-
-  const handleRun = async () => {
-    await runCode();
-    // Read fresh state AFTER runCode resolves — the destructured value
-    // above would be a stale closure (first run saves nothing, later runs
-    // save the previous run's result).
-    const { executionResult, language } = useCodeEditorStore.getState();
-
-    if (user && executionResult) {
-      try {
-        // dayKey is computed server-side (UTC) — the client never sends it.
-        await saveExecution({
-          language,
-          code: executionResult.code,
-          output: executionResult.output || undefined,
-          error: executionResult.error || undefined,
-        });
-      } catch (e) {
-        toast.error(
-          e instanceof Error ? e.message : "Could not save execution"
-        );
-      }
-    }
-  };
-
-  return <RunButtonUI onRun={handleRun} />;
-}
-
-function RunButton() {
-  const { runCode } = useCodeEditorStore();
-  // Demo mode (no Convex URL): run code without saving history.
-  // useMutation needs a Convex provider, so it lives in RunButtonWithSave only.
-  if (!isConvexConfigured) return <RunButtonUI onRun={runCode} />;
-  return <RunButtonWithSave />;
 }
 export default RunButton;

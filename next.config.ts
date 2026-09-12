@@ -17,12 +17,14 @@ const nextConfig: NextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              // Next.js dev/hydration + Monaco web workers/blobs.
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.clerk.accounts.dev https://*.clerk.com",
+              // Next.js hydration + Monaco web workers/blobs.
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com data:",
-              "img-src 'self' data: blob: https://img.clerk.com https://images.clerk.dev",
-              "connect-src 'self' https://emkc.org https://api.piston.rs https://*.clerk.accounts.dev https://*.clerk.com https://*.convex.cloud https://*.convex.site wss://*.convex.cloud wss://*.convex.site",
+              "img-src 'self' data: blob: https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com",
+              // Piston code executors + AdSense.
+              "connect-src 'self' https://emkc.org https://api.piston.rs https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net",
+              "frame-src https://googleads.g.doubleclick.net https://tpc.googlesyndication.com",
               "worker-src 'self' blob:",
               "frame-ancestors 'none'",
             ].join("; "),
