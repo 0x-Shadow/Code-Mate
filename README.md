@@ -1,10 +1,9 @@
-# Code-Mate — Free Online Code Playground (ad-supported)
+# Code-Mate — Free Online Code Playground
 
 Live site: [https://0x-shadow.github.io/Code-Mate/](https://0x-shadow.github.io/Code-Mate/)
 
 Write and run JavaScript, Python, Java, Go, Rust, C++, C#, Ruby and Swift
-right in the browser. **Free, no sign-up, no database.** You earn via
-Google AdSense slots above and below the editor.
+right in the browser. **Free, no sign-up, no database.**
 
 ## Run it
 
@@ -40,27 +39,16 @@ Push the repository to GitHub and set **Settings → Pages → Source** to
 **GitHub Actions**. The included workflow deploys the static site on every
 push to `master`.
 
-Add these repository variables under **Settings → Secrets and variables →
+Add this repository variable under **Settings → Secrets and variables →
 Actions → Variables**:
 
 - `PISTON_URL`: your public HTTPS Piston endpoint.
-- `ADSENSE_CLIENT`: your AdSense publisher ID, such as `ca-pub-XXXX`.
-- Optional: `AD_SLOT_TOP` and `AD_SLOT_BOTTOM`.
 
-Your public URL will be:
+The live URL is:
 
-`https://YOUR-GITHUB-USERNAME.github.io/YOUR-REPOSITORY-NAME/`
+`https://0x-shadow.github.io/Code-Mate/`
 
-Add that URL to **AdSense → Sites** and wait for approval. The Piston server
-must allow CORS requests from this GitHub Pages URL.
-
-## Get paid (AdSense)
-
-1. Apply at https://www.google.com/adsense with your deployed domain
-   (AdSense does not serve `localhost` — slots show placeholders locally).
-2. Copy `.env.example` to `.env.local`, set `NEXT_PUBLIC_ADSENSE_CLIENT=ca-pub-XXXX`.
-3. (Optional) Create ad units and set `NEXT_PUBLIC_AD_SLOT_TOP` / `NEXT_PUBLIC_AD_SLOT_BOTTOM`.
-4. Redeploy. Revenue lands in your AdSense account.
+The Piston server must allow CORS requests from this GitHub Pages URL.
 
 ## How it stays safe (no accounts to abuse)
 

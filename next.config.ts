@@ -51,13 +51,12 @@ const nextConfig: NextConfig = {
             value: [
               "default-src 'self'",
               // Next.js hydration + Monaco web workers/blobs.
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com",
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com data:",
-              "img-src 'self' data: blob: https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com",
-              // Piston code executors + AdSense.
-              "connect-src 'self' https://emkc.org https://api.piston.rs https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net",
-              "frame-src https://googleads.g.doubleclick.net https://tpc.googlesyndication.com",
+              "img-src 'self' data: blob:",
+              "connect-src 'self' https://emkc.org https://api.piston.rs",
+              "frame-src 'self'",
               "worker-src 'self' blob:",
               "frame-ancestors 'none'",
             ].join("; "),

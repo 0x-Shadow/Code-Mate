@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import Script from "next/script";
 import "./globals.css";
 import Footer from "@/components/Footer";
 import { Toaster } from "react-hot-toast";
@@ -35,10 +34,6 @@ export const metadata: Metadata = {
   },
 };
 
-// Google AdSense publisher ID. Set NEXT_PUBLIC_ADSENSE_CLIENT=ca-pub-XXXX
-// in .env.local once AdSense approves your domain. Empty = no ad scripts.
-const ADSENSE_CLIENT = process.env.NEXT_PUBLIC_ADSENSE_CLIENT || "";
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -49,14 +44,6 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-gradient-to-b from-gray-900 to-gray-950 text-gray-100 flex flex-col`}
       >
-        {ADSENSE_CLIENT && (
-          <Script
-            id="adsense-loader"
-            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
-            strategy="afterInteractive"
-            crossOrigin="anonymous"
-          />
-        )}
         {children}
         <Footer />
         <Toaster />

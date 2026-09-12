@@ -20,9 +20,6 @@ jobs:
     env:
       NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
       NEXT_PUBLIC_PISTON_URL: ${{ vars.PISTON_URL }}
-      NEXT_PUBLIC_ADSENSE_CLIENT: ${{ vars.ADSENSE_CLIENT }}
-      NEXT_PUBLIC_AD_SLOT_TOP: ${{ vars.AD_SLOT_TOP }}
-      NEXT_PUBLIC_AD_SLOT_BOTTOM: ${{ vars.AD_SLOT_BOTTOM }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
