@@ -10,6 +10,7 @@ export default defineSchema({
         proSince: v.optional(v.number()),
         lemonSqueezyCustomerId: v.optional(v.string()),
         lemonSqueezyOrderId: v.optional(v.string()),
+        stripeCustomerId: v.optional(v.string()),
     }).index("by_user_id",["userId"]),//by userid means we can fetch the code anywhere from this name and userid means it refreing to
 
     codeExecutions: defineTable({
@@ -18,7 +19,8 @@ export default defineSchema({
     code: v.string(),
     output: v.optional(v.string()),
     error: v.optional(v.string()),
-  }).index("by_user_id", ["userId"]),
+    dayKey: v.string(),
+  }).index("by_user_id", ["userId"]).index("by_user_and_day", ["userId", "dayKey"]),
 
   snippets: defineTable({
     userId: v.string(),

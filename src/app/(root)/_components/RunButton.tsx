@@ -6,6 +6,7 @@ import { useMutation } from "convex/react";
 import { motion } from "framer-motion";
 import { Loader2, Play } from "lucide-react";
 import { api } from "../../../../convex/_generated/api";
+import { getDayKey } from "@/lib/quotas";
 
 function RunButton() {
   const { user } = useUser();
@@ -28,6 +29,7 @@ function RunButton() {
         code: executionResult.code,
         output: executionResult.output || undefined,
         error: executionResult.error || undefined,
+        dayKey: getDayKey(),
       });
     }
   };

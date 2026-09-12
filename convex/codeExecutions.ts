@@ -2,20 +2,44 @@ import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { paginationOptsValidator } from "convex/server";
 
+const FREE_DAILY_RUNS = 30;
+const PRO_DAILY_RUNS = 1000;
+
+export const checkQuota = query({
+  args: { userId: v.string(), dayKey: v.string() },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_user_id")
+      .filter((q) => q.eq(q.field("userId"), args.userId))
+      .first();
+    const isPro = user?.isPro === true;
+    const limit = isPro ? PRO_DAILY_RUNS : FREE_DAILY_RUNS;
+    const used = (
+      await ctx.db
+        .query("codeExecutions")
+        .withIndex("by_user_and_day")
+        .filter((q) => q.eq(q.field("userId"), args.userId))
+        .filter((q) => q.eq(q.field("dayKey"), args.dayKey))
+        .collect()
+    ).length;
+    return { used, limit, isPro, remaining: Math.max(0, limit - used) };
+  },
+});
+
 export const saveExecution = mutation({
     args:{
         language: v.string(),
         code:v.string(),
-        //we cou
         output:v.optional(v.string()),
-        error:v.optional(v.string())
+        error:v.optional(v.string()),
+        dayKey: v.string(),
     },
     handler:async(ctx,args)=>{
-        //user authentication
         const identity=await ctx.auth.getUserIdentity();
         if(!identity) throw new ConvexError("Not authenticated");
+        if (args.code.length > 50_000) throw new ConvexError("Code too large");
 
-        //check pro status
         const user=await ctx.db
         .query("users")
         .withIndex("by_user_id")
@@ -26,10 +50,24 @@ export const saveExecution = mutation({
             throw new ConvexError("Pro Subscription Required");
         }
 
-        await ctx.db.insert("codeExecutions",{
-            ...args,
-            userId:identity.subject,
+        const used = (
+          await ctx.db
+            .query("codeExecutions")
+            .withIndex("by_user_and_day")
+            .filter((q) => q.eq(q.field("userId"), identity.subject))
+            .filter((q) => q.eq(q.field("dayKey"), args.dayKey))
+            .collect()
+        ).length;
+        const limit = user?.isPro ? PRO_DAILY_RUNS : FREE_DAILY_RUNS;
+        if (used >= limit) throw new ConvexError("Daily limit reached");
 
+        await ctx.db.insert("codeExecutions",{
+            language: args.language,
+            code: args.code,
+            output: args.output,
+            error: args.error,
+            dayKey: args.dayKey,
+            userId:identity.subject,
         })
     }
 })
