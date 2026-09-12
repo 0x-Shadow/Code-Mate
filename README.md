@@ -1,13 +1,11 @@
-# 🧠 CadeMate — Smart Collaborative Online Coding Platform
+# Code-Mate — Browser IDE SaaS Starter (Next.js + Clerk + Convex + Stripe)
 
-CadeMate is a modern **interactive online IDE** designed to provide developers with a seamless, customizable, and community-driven coding experience.  
-Built with the latest web technologies, CadeMate combines the power of **Next.js 15**, **Convex**, **Clerk**, and **TypeScript** to create a platform that’s fast, flexible, and user-friendly.
+Run JavaScript, Python, Java, Go, Rust, C++, C#, Ruby, Swift, TypeScript in the browser (Piston), save/share snippets, gate Pro runs with Stripe + Convex quotas.
 
----
-
-## 🚀 Features
-
-### 💻 **Online IDE**
+- Live demo: _(paste your Vercel URL here)_
+- Stack: Next.js 15, Clerk, Convex, Monaco, Zustand, Tailwind
+- Payments: Stripe (primary) + LemonSqueezy (legacy)
+- Limits: 30 runs/day Free, 1000/day Pro (see `convex/codeExecutions.ts`)
 - Supports **10+ programming languages**
 - Real-time code execution and output visualization
 - Built-in handling for **Success** and **Error** states

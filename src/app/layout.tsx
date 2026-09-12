@@ -18,8 +18,8 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Code-Mate",
-  description: "Share and run code snippets",
+  title: "Code-Mate — Browser IDE + Snippet Library (Next.js + Convex SaaS Starter)",
+  description: "Run 10+ languages in the browser, save snippets, gate Pro with Stripe. Clerk auth, Convex DB, Monaco editor. Deploy in 10 minutes.",
 };
 
 export default function RootLayout({
