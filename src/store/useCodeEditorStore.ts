@@ -2,7 +2,7 @@ import { CodeEditorState } from "./../types/index";
 // import { LANGUAGE_CONFIG } from "@/app/(root)/_constants";
 import { create } from "zustand";
 // import { Monaco } from "@monaco-editor/react";
-import * as monaco from "monaco-editor";
+import type * as monaco from "monaco-editor";
 import { LANGUAGE_CONFIG, THEMES } from "@/app/(root)/_constants";
 
 const DEFAULT_LANGUAGE = "javascript";

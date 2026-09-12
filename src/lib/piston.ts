@@ -7,11 +7,94 @@ const EXECUTOR =
   process.env.NEXT_PUBLIC_PISTON_URL ||
   "https://emkc.org/api/v2/piston/execute";
 
+type PistonRuntime = { language: string; version: string; aliases?: string[] };
+
+// Pinned versions rot (every Piston release ships new ones), so resolve the
+// newest matching runtime from the executor itself, falling back to pinned.
+function runtimesUrl(): string {
+  const base = EXECUTOR.replace(/\/+$/, "");
+  if (base.endsWith("/piston/execute")) {
+    return base.slice(0, -"/piston/execute".length) + "/piston/runtimes";
+  }
+  if (base.endsWith("/execute")) {
+    return base.slice(0, -"/execute".length) + "/runtimes";
+  }
+  return base + "/runtimes";
+}
+
+function normLang(s: string): string {
+  return s.toLowerCase().replace(/\+\+/g, "pp").replace(/^c#$/, "csharp");
+}
+
+function compareVersions(a: string, b: string): number {
+  const pa = a.split(/[^0-9]+/).filter(Boolean).map(Number);
+  const pb = b.split(/[^0-9]+/).filter(Boolean).map(Number);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const d = (pa[i] ?? 0) - (pb[i] ?? 0);
+    if (d !== 0) return d;
+  }
+  return 0;
+}
+
+let runtimesCache: Promise<PistonRuntime[]> | null = null;
+
+function loadRuntimes(): Promise<PistonRuntime[]> {
+  if (!runtimesCache) {
+    runtimesCache = (async () => {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 8000);
+      try {
+        const res = await fetch(runtimesUrl(), { signal: ctrl.signal });
+        if (!res.ok) throw new Error(`runtimes HTTP ${res.status}`);
+        const list = (await res.json()) as PistonRuntime[];
+        if (!Array.isArray(list)) throw new Error("bad runtimes payload");
+        return list;
+      } finally {
+        clearTimeout(t);
+      }
+    })();
+    // A failed probe must not poison later runs — retry next time.
+    runtimesCache.catch(() => {
+      runtimesCache = null;
+    });
+  }
+  return runtimesCache;
+}
+
+async function resolveRuntime(
+  language: string,
+  pinnedVersion: string
+): Promise<{ language: string; version: string }> {
+  try {
+    const list = await loadRuntimes();
+    const want = normLang(language);
+    const matches = list.filter(
+      (r) =>
+        normLang(r.language) === want ||
+        (r.aliases ?? []).some((a) => normLang(a) === want)
+    );
+    if (matches.length > 0) {
+      const best = matches.reduce((a, b) =>
+        compareVersions(b.version, a.version) > 0 ? b : a
+      );
+      return { language: best.language, version: best.version };
+    }
+  } catch {
+    // Executor without a runtimes endpoint (or offline) — use pinned.
+  }
+  return { language, version: pinnedVersion };
+}
+
 export async function executeCode({ language, version, code }: PistonArgs): Promise<{ output: string }> {
   if (!code.trim()) throw new Error("Please Enter Some Code");
   if (code.length > 50_000) throw new Error("Code too large (max 50KB)");
 
-  const body = JSON.stringify({ language, version, files: [{ content: code }] });
+  const runtime = await resolveRuntime(language, version);
+  const body = JSON.stringify({
+    language: runtime.language,
+    version: runtime.version,
+    files: [{ content: code }],
+  });
 
   let data: unknown;
   try {

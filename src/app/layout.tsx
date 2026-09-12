@@ -16,10 +16,23 @@ const geistMono = localFont({
   weight: "100 900",
 });
 
+const SITE_TITLE = "Code-Mate — Free Online Code Playground (10+ Languages)";
+const SITE_DESCRIPTION =
+  "Write and run JavaScript, Python, Java, Go, Rust, C++, C#, Ruby and Swift right in your browser. Free, no sign-up.";
+
 export const metadata: Metadata = {
-  title: "Code-Mate — Free Online Code Playground (10+ Languages)",
-  description:
-    "Write and run JavaScript, Python, Java, Go, Rust, C++, C#, Ruby and Swift right in your browser. Free, no sign-up.",
+  title: SITE_TITLE,
+  description: SITE_DESCRIPTION,
+  openGraph: {
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+  },
 };
 
 // Google AdSense publisher ID. Set NEXT_PUBLIC_ADSENSE_CLIENT=ca-pub-XXXX

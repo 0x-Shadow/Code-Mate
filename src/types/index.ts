@@ -44,12 +44,12 @@ export interface CodeEditorState {
   error: string | null;
   theme: string;
   fontSize: number;
-   editor: monaco.editor.IStandaloneCodeEditor | null;
+  editor: monaco.editor.IStandaloneCodeEditor | null;
   executionResult: ExecutionResult | null;
   isHydrated: boolean;
 
   hydrate: () => void;
-   setEditor: (editor: monaco.editor.IStandaloneCodeEditor) => void;
+  setEditor: (editor: monaco.editor.IStandaloneCodeEditor) => void;
   getCode: () => string;
   setLanguage: (language: string) => void;
   setTheme: (theme: string) => void;

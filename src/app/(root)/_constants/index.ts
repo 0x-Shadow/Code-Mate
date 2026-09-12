@@ -1,17 +1,7 @@
-import { Monaco } from "@monaco-editor/react";
-import { Theme } from "../../../types";
+import type { Monaco } from "@monaco-editor/react";
+import { Language, Theme } from "../../../types";
 
-type LanguageConfig = Record<
-  string,
-  {
-    id: string;
-    label: string;
-    logoPath: string;
-    pistonRuntime: { language: string; version: string };
-    monacoLanguage: string;
-    defaultCode: string;
-  }
->;
+type LanguageConfig = Record<string, Language>;
 
 export const LANGUAGE_CONFIG: LanguageConfig = {
   javascript: {
@@ -344,7 +334,7 @@ export const THEMES: Theme[] = [
   { id: "solarized-dark", label: "Solarized Dark", color: "#002b36" },
 ];
 
-export const THEME_DEFINITONS = {
+export const THEME_DEFINITIONS = {
   "github-dark": {
     base: "vs-dark",
     inherit: true,
@@ -420,23 +410,8 @@ export const THEME_DEFINITONS = {
 };
 
 // Helper function to define themes in Monaco
-// export const defineMonacoThemes = (monaco: Monaco) => {
-//   Object.entries(THEME_DEFINITONS).forEach(([themeName, themeData]) => {
-//     monaco.editor.defineTheme(themeName as any, {
-//       base: themeData.base,
-//       inherit: themeData.inherit,
-//       rules: themeData.rules.map((rule) => ({
-//         ...rule,
-//         foreground: rule.foreground,
-//       })),
-//       colors: themeData.colors,
-//     });
-//   });
-// };
-// ...existing code...
-// Helper function to define themes in Monaco
 export const defineMonacoThemes = (monaco: Monaco) => {
-  Object.entries(THEME_DEFINITONS).forEach(([themeName, themeData]) => {
+  Object.entries(THEME_DEFINITIONS).forEach(([themeName, themeData]) => {
     monaco.editor.defineTheme(themeName, {
       base: themeData.base as 'vs' | 'vs-dark' | 'hc-black',
       inherit: themeData.inherit,
