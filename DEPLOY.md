@@ -1,7 +1,7 @@
 # Deploy Code-Mate to GitHub Pages
 
 The included `.github/workflows/deploy-pages.yml` builds and deploys the app
-as a static GitHub Pages site whenever `main` changes.
+as a static GitHub Pages site whenever `master` changes.
 
 1. Push this repository to GitHub.
 2. In **Settings → Pages**, set **Source** to **GitHub Actions**.
@@ -10,11 +10,15 @@ as a static GitHub Pages site whenever `main` changes.
      ending in `/api/v2/piston/execute`.
    - `ADSENSE_CLIENT`: your `ca-pub-...` publisher ID.
    - Optional: `AD_SLOT_TOP` and `AD_SLOT_BOTTOM`.
-4. Push to `main` or run the **Deploy to GitHub Pages** workflow manually.
+4. Push to `master` or run the **Deploy to GitHub Pages** workflow manually.
 
 The site URL will be:
 
 `https://YOUR-GITHUB-USERNAME.github.io/YOUR-REPOSITORY-NAME/`
+
+For this repository, the live URL is:
+
+`https://0x-shadow.github.io/Code-Mate/`
 
 Add that exact URL, including the repository path, under **AdSense → Sites**.
 AdSense must approve the domain before ads appear. GitHub Pages hosts the

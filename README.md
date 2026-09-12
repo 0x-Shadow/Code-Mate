@@ -1,5 +1,7 @@
 # Code-Mate — Free Online Code Playground (ad-supported)
 
+Live site: [https://0x-shadow.github.io/Code-Mate/](https://0x-shadow.github.io/Code-Mate/)
+
 Write and run JavaScript, Python, Java, Go, Rust, C++, C#, Ruby and Swift
 right in the browser. **Free, no sign-up, no database.** You earn via
 Google AdSense slots above and below the editor.
@@ -36,7 +38,7 @@ fallback; the app requires `NEXT_PUBLIC_PISTON_URL`.)
 
 Push the repository to GitHub and set **Settings → Pages → Source** to
 **GitHub Actions**. The included workflow deploys the static site on every
-push to `main`.
+push to `master`.
 
 Add these repository variables under **Settings → Secrets and variables →
 Actions → Variables**:
@@ -76,4 +78,5 @@ must allow CORS requests from this GitHub Pages URL.
   stored anywhere. Preferences (theme, code drafts) live only in the
   visitor's own `localStorage`.
 
-See [DEPLOY.md](DEPLOY.md) for the complete GitHub Pages checklist.
+See [DEPLOY.md](https://github.com/0x-Shadow/Code-Mate/blob/master/DEPLOY.md)
+for the complete GitHub Pages checklist.
