@@ -10,12 +10,15 @@ import { getDayKey } from "@/lib/quotas";
 
 function RunButton() {
   const { user } = useUser();
-  const { runCode, language, isRunning,executionResult } = useCodeEditorStore();
+  const { runCode, isRunning } = useCodeEditorStore();
   const saveExecution = useMutation(api.codeExecutions.saveExecution);
 
   const handleRun = async () => {
     await runCode();
-    // const result = getExecutionResult();
+    // Read fresh state AFTER runCode resolves — the destructured value
+    // above would be a stale closure (first run saves nothing, later runs
+    // save the previous run's result).
+    const { executionResult, language } = useCodeEditorStore.getState();
 
     if (user && executionResult) {
       console.log("Saving execution with data:", {

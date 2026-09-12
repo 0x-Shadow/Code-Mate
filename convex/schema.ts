@@ -19,7 +19,7 @@ export default defineSchema({
     code: v.string(),
     output: v.optional(v.string()),
     error: v.optional(v.string()),
-    dayKey: v.string(),
+    dayKey: v.optional(v.string()),
   }).index("by_user_id", ["userId"]).index("by_user_and_day", ["userId", "dayKey"]),
 
   snippets: defineTable({

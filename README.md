@@ -65,16 +65,16 @@ Run JavaScript, Python, Java, Go, Rust, C++, C#, Ruby, Swift, TypeScript in the 
 
 ## 🌟 Vision
 
-CadeMate aims to make coding more **collaborative, accessible, and inspiring**.  
-Whether you're a beginner writing your first “Hello World” or a professional testing snippets, CadeMate is built to **empower every coder** with a smarter, more connected environment.
+Code-Mate aims to make coding more **collaborative, accessible, and inspiring**.  
+Whether you're a beginner writing your first “Hello World” or a professional testing snippets, Code-Mate is built to **empower every coder** with a smarter, more connected environment.
 
 ---
 
 ## 🧑‍💻 Developer
 
-**👤 Avinash Tanwar**  
-📧 [Email](mailto:example@email.com)  
-🌐 [Portfolio](#) | 💼 [LinkedIn](#) | 🐙 [GitHub](https://github.com/AvinashTanwar01)
+**👤 [Your Name]**  
+📧 [Your Email](mailto:you@example.com)  
+🌐 [Portfolio](#) | 💼 [LinkedIn](#) | 🐙 [GitHub](#)
 
 ---
 
@@ -92,10 +92,10 @@ Whether you're a beginner writing your first “Hello World” or a professional
 
 ```bash
 # Clone the repository
-git clone https://github.com/AvinashTanwar01/CadeMate.git
+git clone https://github.com/<your-username>/code-mate.git
 
 # Navigate to the project directory
-cd CadeMate
+cd code-mate
 
 # Install dependencies
 npm install

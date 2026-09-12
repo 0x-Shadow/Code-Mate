@@ -6,7 +6,7 @@ const FREE_DAILY_RUNS = 30;
 const PRO_DAILY_RUNS = 1000;
 
 export const checkQuota = query({
-  args: { userId: v.string(), dayKey: v.string() },
+  args: { userId: v.string(), dayKey: v.optional(v.string()) },
   handler: async (ctx, args) => {
     const user = await ctx.db
       .query("users")
@@ -15,6 +15,10 @@ export const checkQuota = query({
       .first();
     const isPro = user?.isPro === true;
     const limit = isPro ? PRO_DAILY_RUNS : FREE_DAILY_RUNS;
+    // Missing dayKey = uncounted legacy: nothing to count against.
+    if (args.dayKey === undefined) {
+      return { used: 0, limit, isPro, remaining: limit };
+    }
     const used = (
       await ctx.db
         .query("codeExecutions")
@@ -33,7 +37,7 @@ export const saveExecution = mutation({
         code:v.string(),
         output:v.optional(v.string()),
         error:v.optional(v.string()),
-        dayKey: v.string(),
+        dayKey: v.optional(v.string()),
     },
     handler:async(ctx,args)=>{
         const identity=await ctx.auth.getUserIdentity();
@@ -50,14 +54,19 @@ export const saveExecution = mutation({
             throw new ConvexError("Pro Subscription Required");
         }
 
-        const used = (
-          await ctx.db
-            .query("codeExecutions")
-            .withIndex("by_user_and_day")
-            .filter((q) => q.eq(q.field("userId"), identity.subject))
-            .filter((q) => q.eq(q.field("dayKey"), args.dayKey))
-            .collect()
-        ).length;
+        // Missing dayKey = uncounted legacy (pre-migration rows and old
+        // clients): only count docs with a matching dayKey.
+        const used =
+          args.dayKey === undefined
+            ? 0
+            : (
+                await ctx.db
+                  .query("codeExecutions")
+                  .withIndex("by_user_and_day")
+                  .filter((q) => q.eq(q.field("userId"), identity.subject))
+                  .filter((q) => q.eq(q.field("dayKey"), args.dayKey))
+                  .collect()
+              ).length;
         const limit = user?.isPro ? PRO_DAILY_RUNS : FREE_DAILY_RUNS;
         if (used >= limit) throw new ConvexError("Daily limit reached");
 
